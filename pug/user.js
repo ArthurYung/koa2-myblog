@@ -44,6 +44,12 @@ exports.saveUser = async (ctx, next) => {
   }
 }
 
+
+/**
+ * @name 点赞系统
+ * @param {*} ctx 
+ * @param {*} next 
+ */
 exports.upSup = async (ctx, next) => {
  const token = "Arthur"
  var user = await Mysup.findOne({

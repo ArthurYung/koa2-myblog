@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "i": "^0.3.6",
+    "jsonwebtoken": "^8.3.0",
     "koa": "^2.5.2",
     "koa-body": "^4.0.4",
     "koa-compose": "^4.1.0",

@@ -5,6 +5,11 @@ var uSchema = new Schema({
   name:String
 })
 
+var lSchema = new Schema({
+  name:String,
+  psw:String
+})
+
 var mSchema = new Schema({
   msg:String,
   name:String,
@@ -23,7 +28,9 @@ var sSchema = new Schema({
 mongoose.model('usercols',uSchema)
 mongoose.model('msgcols',mSchema)
 mongoose.model('mysups',sSchema)
+mongoose.model('logins',lSchema)
 exports.User = mongoose.model('usercols')
 exports.Message = mongoose.model('msgcols')
 exports.Mysup = mongoose.model('mysups')
+exports.Login = mongoose.model('logins')
 
