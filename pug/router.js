@@ -27,8 +27,8 @@ module.exports = function(){
   router.post('/crm/uShow', Koabody(), routeToken, CrmUser.showUsers) // 查询用户
   router.post('/crm/delete',Koabody(), routeToken, CrmUser.deleteUser) // 删除用户
   router.post('/crm/upUser',Koabody(), routeToken, CrmUser.updateUser) // 修改用户
-  router.post('/crm/mShow', Koabody(),  CrmMsg.showMessages) // 查询用户
-  router.post('/crm/mdelete',Koabody(), routeToken, CrmMsg.deleteMessage) // 删除用户
-  router.post('/crm/upMsg',Koabody(), routeToken, CrmMsg.updateMessage) // 修改用户
+  router.post('/crm/mShow', Koabody(),  routeToken, CrmMsg.showMessages) // 查询留言
+  router.post('/crm/mdelete',Koabody(), routeToken, CrmMsg.deleteMessage) // 删除留言
+  router.post('/crm/upMsg',Koabody(), routeToken, CrmMsg.updateMessage) // 修改留言
   return router
 }

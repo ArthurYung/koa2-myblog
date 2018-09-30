@@ -9,23 +9,26 @@ exports.showMessages = async (ctx, next) => {
     const search = ctx.request.body.doc || false
     const jump = pageInfo * pageSize
     let msgs;
+    let count;
     if(search){
       const _match = new RegExp(search, "i")
+      count = await Message.find().or([{ name: _match}, {msg: _match}]).count()
       msgs = await Message.find()
                         .or([{ name: _match}, {msg: _match}])
-                        .sort({ "_id": 1 })
+                        .sort({ "_id": -1 })
                         .skip(jump)
                         .limit(pageSize) // 模糊查询
     }else{
+      count = await Message.estimatedDocumentCount()
       msgs = await Message.find({})
-                        .sort({ "_id": 1 })
+                        .sort({ "_id": -1 })
                         .skip(jump)
                         .limit(pageSize)
     }
     ctx.type = 'application/json'
     ctx.body = {
       status: 1,
-      pageNum: msgs.length,
+      pageNum: count,
       msgs
     }
   } catch (e) {

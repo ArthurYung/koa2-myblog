@@ -1,4 +1,4 @@
-const { User } = require('../models.js')
+const { User, Message } = require('../models.js')
 const mongoose = require('mongoose');
 
 
@@ -8,15 +8,17 @@ exports.showUsers = async (ctx, next) => {
     const pageSize = ~~ctx.request.body.size || 10
     const search = ctx.request.body.doc || false
     const jump = pageInfo * pageSize
-    let users;
+    let users, count;
     if(search){
       const _match = new RegExp(search, "i")
+      count = await User.find().or([{ name: _match}, {email: _match}]).count()
       users = await User.find()
                         .or([{ name: _match}, {email: _match}])
                         .sort({ "_id": 1 })
                         .skip(jump)
                         .limit(pageSize) // 模糊查询
     }else{
+      count = await User.estimatedDocumentCount()
       users = await User.find({})
                         .sort({ "_id": 1 })
                         .skip(jump)
@@ -25,7 +27,7 @@ exports.showUsers = async (ctx, next) => {
     ctx.type = 'application/json'
     ctx.body = {
       status: 1,
-      pageNum: users.length,
+      pageNum: count,
       users
     }
   } catch (e) {
@@ -65,7 +67,13 @@ exports.updateUser = async (ctx) => {
   try {
     const id = ctx.request.body.key || -1
     const { name, email } = ctx.request.body // 2018-9-28
-    users = await User.update({ _id: mongoose.Types.ObjectId(id) }, { name, email })
+    // 如果修改了用户列表中的用户名，则同步修改留言表中的用户名
+   const users =  await User.findOne({ _id: mongoose.Types.ObjectId(id) },async function(err,doc){
+      if(`${doc.name}`!==`${name}`){
+        await Message.update({ name: doc.name }, { name },{ multi: true })
+      }
+      return await User.updateOne({ _id: mongoose.Types.ObjectId(id) }, { name, email })
+    })
     if (users) {
       ctx.body = {
         status: 1,
