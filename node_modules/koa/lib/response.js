@@ -48,7 +48,7 @@ module.exports = {
     const { res } = this;
     return typeof res.getHeaders === 'function'
       ? res.getHeaders()
-      : res._headers || {};  // Node < 7.7
+      : res._headers || {}; // Node < 7.7
   },
 
   /**
@@ -83,8 +83,8 @@ module.exports = {
   set status(code) {
     if (this.headerSent) return;
 
-    assert('number' == typeof code, 'status code must be a number');
-    assert(statuses[code], `invalid status code: ${code}`);
+    assert(Number.isInteger(code), 'status code must be a number');
+    assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
     this._explicitStatus = true;
     this.res.statusCode = code;
     if (this.req.httpVersionMajor < 2) this.res.statusMessage = statuses[code];
@@ -211,7 +211,7 @@ module.exports = {
       return;
     }
 
-    return ~~len;
+    return Math.trunc(len) || 0;
   },
 
   /**
@@ -285,9 +285,9 @@ module.exports = {
    * @api public
    */
 
-  attachment(filename) {
+  attachment(filename, options) {
     if (filename) this.type = extname(filename);
-    this.set('Content-Disposition', contentDisposition(filename));
+    this.set('Content-Disposition', contentDisposition(filename, options));
   },
 
   /**
@@ -381,7 +381,7 @@ module.exports = {
   get type() {
     const type = this.get('Content-Type');
     if (!type) return '';
-    return type.split(';')[0];
+    return type.split(';', 1)[0];
   },
 
   /**

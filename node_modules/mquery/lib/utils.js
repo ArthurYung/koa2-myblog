@@ -4,7 +4,8 @@
  * Module dependencies.
  */
 
-var RegExpClone = require('regexp-clone')
+var Buffer = require('safe-buffer').Buffer;
+var RegExpClone = require('regexp-clone');
 
 /**
  * Clones objects
@@ -15,7 +16,7 @@ var RegExpClone = require('regexp-clone')
  * @api private
  */
 
-var clone = exports.clone = function clone (obj, options) {
+var clone = exports.clone = function clone(obj, options) {
   if (obj === undefined || obj === null)
     return obj;
 
@@ -29,10 +30,8 @@ var clone = exports.clone = function clone (obj, options) {
         : new obj.constructor(obj.id);
     }
 
-    if ('ReadPreference' === obj._type && obj.isValid && obj.toObject) {
-      return 'function' == typeof obj.clone
-        ? obj.clone()
-        : new obj.constructor(obj.mode, clone(obj.tags, options));
+    if (obj.constructor.name === 'ReadPreference') {
+      return new obj.constructor(obj.mode, clone(obj.tags, options));
     }
 
     if ('Binary' == obj._bsontype && obj.buffer && obj.value) {
@@ -62,14 +61,12 @@ var clone = exports.clone = function clone (obj, options) {
  * ignore
  */
 
-var cloneObject = exports.cloneObject = function cloneObject (obj, options) {
+exports.cloneObject = function cloneObject(obj, options) {
   var minimize = options && options.minimize;
   var ret = {};
   var hasKeys;
-  var keys;
   var val;
   var k;
-  var i;
 
   for (k in obj) {
     val = clone(obj[k], options);
@@ -85,7 +82,7 @@ var cloneObject = exports.cloneObject = function cloneObject (obj, options) {
     : ret;
 };
 
-var cloneArray = exports.cloneArray = function cloneArray (arr, options) {
+exports.cloneArray = function cloneArray(arr, options) {
   var ret = [];
   for (var i = 0, l = arr.length; i < l; i++)
     ret.push(clone(arr[i], options));
@@ -106,20 +103,20 @@ var cloneArray = exports.cloneArray = function cloneArray (arr, options) {
  * @api private
  */
 
-var tick = exports.tick = function tick (callback) {
+exports.tick = function tick(callback) {
   if ('function' !== typeof callback) return;
-  return function () {
+  return function() {
     // callbacks should always be fired on the next
     // turn of the event loop. A side benefit is
     // errors thrown from executing the callback
     // will not cause drivers state to be corrupted
     // which has historically been a problem.
     var args = arguments;
-    soon(function(){
+    soon(function() {
       callback.apply(this, args);
     });
-  }
-}
+  };
+};
 
 /**
  * Merges `from` into `to` without overwriting existing properties.
@@ -129,10 +126,10 @@ var tick = exports.tick = function tick (callback) {
  * @api private
  */
 
-var merge = exports.merge = function merge (to, from) {
-  var keys = Object.keys(from)
-    , i = keys.length
-    , key
+exports.merge = function merge(to, from) {
+  var keys = Object.keys(from),
+      i = keys.length,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -146,7 +143,7 @@ var merge = exports.merge = function merge (to, from) {
       }
     }
   }
-}
+};
 
 /**
  * Same as merge but clones the assigned values.
@@ -156,10 +153,10 @@ var merge = exports.merge = function merge (to, from) {
  * @api private
  */
 
-var mergeClone = exports.mergeClone = function mergeClone (to, from) {
-  var keys = Object.keys(from)
-    , i = keys.length
-    , key
+exports.mergeClone = function mergeClone(to, from) {
+  var keys = Object.keys(from),
+      i = keys.length,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -173,7 +170,7 @@ var mergeClone = exports.mergeClone = function mergeClone (to, from) {
       }
     }
   }
-}
+};
 
 /**
  * Read pref helper (mongo 2.2 drivers support this)
@@ -189,7 +186,7 @@ var mergeClone = exports.mergeClone = function mergeClone (to, from) {
  * @param {String} pref
  */
 
-exports.readPref = function readPref (pref) {
+exports.readPref = function readPref(pref) {
   switch (pref) {
     case 'p':
       pref = 'primary';
@@ -209,16 +206,55 @@ exports.readPref = function readPref (pref) {
   }
 
   return pref;
-}
+};
+
+
+/**
+ * Read Concern helper (mongo 3.2 drivers support this)
+ *
+ * Allows using string to specify read concern level:
+ *
+ *     local          3.2+
+ *     available      3.6+
+ *     majority       3.2+
+ *     linearizable   3.4+
+ *     snapshot       4.0+
+ *
+ * @param {String|Object} concern
+ */
+
+exports.readConcern = function readConcern(concern) {
+  if ('string' === typeof concern) {
+    switch (concern) {
+      case 'l':
+        concern = 'local';
+        break;
+      case 'a':
+        concern = 'available';
+        break;
+      case 'm':
+        concern = 'majority';
+        break;
+      case 'lz':
+        concern = 'linearizable';
+        break;
+      case 's':
+        concern = 'snapshot';
+        break;
+    }
+    concern = { level: concern };
+  }
+  return concern;
+};
 
 /**
  * Object.prototype.toString.call helper
  */
 
 var _toString = Object.prototype.toString;
-var toString = exports.toString = function (arg) {
+exports.toString = function(arg) {
   return _toString.call(arg);
-}
+};
 
 /**
  * Determines if `arg` is an object.
@@ -227,9 +263,9 @@ var toString = exports.toString = function (arg) {
  * @return {Boolean}
  */
 
-var isObject = exports.isObject = function (arg) {
+var isObject = exports.isObject = function(arg) {
   return '[object Object]' == exports.toString(arg);
-}
+};
 
 /**
  * Determines if `arg` is an array.
@@ -239,22 +275,22 @@ var isObject = exports.isObject = function (arg) {
  * @see nodejs utils
  */
 
-var isArray = exports.isArray = function (arg) {
+exports.isArray = function(arg) {
   return Array.isArray(arg) ||
     'object' == typeof arg && '[object Array]' == exports.toString(arg);
-}
+};
 
 /**
  * Object.keys helper
  */
 
-exports.keys = Object.keys || function (obj) {
+exports.keys = Object.keys || function(obj) {
   var keys = [];
   for (var k in obj) if (obj.hasOwnProperty(k)) {
     keys.push(k);
   }
   return keys;
-}
+};
 
 /**
  * Basic Object.create polyfill.
@@ -267,12 +303,12 @@ exports.create = 'function' == typeof Object.create
   ? Object.create
   : create;
 
-function create (proto) {
+function create(proto) {
   if (arguments.length > 1) {
-    throw new Error("Adding properties is not supported")
+    throw new Error('Adding properties is not supported');
   }
 
-  function F () {}
+  function F() {}
   F.prototype = proto;
   return new F;
 }
@@ -281,10 +317,10 @@ function create (proto) {
  * inheritance
  */
 
-exports.inherits = function (ctor, superCtor) {
+exports.inherits = function(ctor, superCtor) {
   ctor.prototype = exports.create(superCtor.prototype);
   ctor.prototype.constructor = ctor;
-}
+};
 
 /**
  * nextTick helper
@@ -302,8 +338,8 @@ var soon = exports.soon = 'function' == typeof setImmediate
  * @return {Buffer}
  */
 
-exports.cloneBuffer = function (buff) {
-  var dupe = new Buffer(buff.length);
+exports.cloneBuffer = function(buff) {
+  var dupe = Buffer.alloc(buff.length);
   buff.copy(dupe, 0, 0, buff.length);
   return dupe;
 };

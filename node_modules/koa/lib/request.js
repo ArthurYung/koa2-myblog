@@ -252,9 +252,12 @@ module.exports = {
   get host() {
     const proxy = this.app.proxy;
     let host = proxy && this.get('X-Forwarded-Host');
-    host = host || this.get('Host');
+    if (!host) {
+      if (this.req.httpVersionMajor >= 2) host = this.get(':authority');
+      if (!host) host = this.get('Host');
+    }
     if (!host) return '';
-    return host.split(/\s*,\s*/)[0];
+    return host.split(/\s*,\s*/, 1)[0];
   },
 
   /**
@@ -270,7 +273,7 @@ module.exports = {
     const host = this.host;
     if (!host) return '';
     if ('[' == host[0]) return this.URL.hostname || ''; // IPv6
-    return host.split(':')[0];
+    return host.split(':', 1)[0];
   },
 
   /**
@@ -284,11 +287,9 @@ module.exports = {
   get URL() {
     /* istanbul ignore else */
     if (!this.memoizedURL) {
-      const protocol = this.protocol;
-      const host = this.host;
       const originalUrl = this.originalUrl || ''; // avoid undefined in template string
       try {
-        this.memoizedURL = new URL(`${protocol}://${host}${originalUrl}`);
+        this.memoizedURL = new URL(`${this.origin}${originalUrl}`);
       } catch (err) {
         this.memoizedURL = Object.create(null);
       }
@@ -364,16 +365,12 @@ module.exports = {
    */
 
   get charset() {
-    let type = this.get('Content-Type');
-    if (!type) return '';
-
     try {
-      type = contentType.parse(type);
+      const { parameters } = contentType.parse(this.req);
+      return parameters.charset || '';
     } catch (e) {
       return '';
     }
-
-    return type.parameters.charset || '';
   },
 
   /**
@@ -405,7 +402,7 @@ module.exports = {
     if (this.socket.encrypted) return 'https';
     if (!this.app.proxy) return 'http';
     const proto = this.get('X-Forwarded-Proto');
-    return proto ? proto.split(/\s*,\s*/)[0] : 'http';
+    return proto ? proto.split(/\s*,\s*/, 1)[0] : 'http';
   },
 
   /**
@@ -505,7 +502,7 @@ module.exports = {
    * @api private
    */
   set accept(obj) {
-    return this._accept = obj;
+    this._accept = obj;
   },
 
   /**
